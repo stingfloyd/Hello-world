@@ -1,0 +1,84 @@
+import math
+import matplotlib.pyplot as plt
+import numpy as np
+
+# Constants
+BOTTLE_VOLUME = 1.5  # L
+BOTTLE_DIAMETER = 0.095  # m
+BOTTLE_MASS = 0.050  # kg
+WATER_DENSITY = 1000  # kg/m^3
+AIR_DENSITY = 1.225  # kg/m^3
+GRAVITY = 9.81  # m/s^2
+DRAG_COEFFICIENT = 0.5  # Approximate value for a bottle shape
+
+def calculate_launch(fill_grade):
+    water_volume = BOTTLE_VOLUME * fill_grade
+    air_volume = BOTTLE_VOLUME - water_volume
+    water_mass = water_volume * WATER_DENSITY / 1000  # Convert L to m^3
+    
+    # Initial conditions
+    initial_pressure = 300000  # Pa (about 3 atm)
+    atmospheric_pressure = 101325  # Pa
+    
+    # Calculate initial velocity using Bernoulli's principle
+    velocity = math.sqrt(2 * (initial_pressure - atmospheric_pressure) / WATER_DENSITY)
+    
+    # Calculate mass and cross-sectional area
+    total_mass = BOTTLE_MASS + water_mass
+    area = math.pi * (BOTTLE_DIAMETER/2)**2
+    
+    # Simulate flight
+    dt = 0.01  # Time step
+    height = 0
+    max_height = 0
+    max_velocity = velocity
+    
+    while velocity > 0:
+        # Calculate drag force
+        drag = 0.5 * AIR_DENSITY * velocity**2 * DRAG_COEFFICIENT * area
+        
+        # Calculate acceleration
+        acceleration = -GRAVITY - (drag / total_mass)
+        
+        # Update velocity and height
+        velocity += acceleration * dt
+        height += velocity * dt
+        
+        if height > max_height:
+            max_height = height
+        if velocity > max_velocity:
+            max_velocity = velocity
+    
+    return max_height, max_velocity
+
+# Evaluate for different fill grades
+fill_grades = np.linspace(0.1, 0.9, 50)
+heights = []
+velocities = []
+
+for fill in fill_grades:
+    height, velocity = calculate_launch(fill)
+    heights.append(height)
+    velocities.append(velocity)
+
+# Find optimal fill grade
+optimal_fill = fill_grades[heights.index(max(heights))]
+
+# Plot results
+plt.figure(figsize=(10, 6))
+plt.plot(fill_grades, heights, label='Max Height')
+plt.plot(fill_grades, velocities, label='Max Velocity')
+plt.xlabel('Fill Grade')
+plt.ylabel('Height (m) / Velocity (m/s)')
+plt.title('Water Rocket Performance')
+plt.legend()
+plt.grid(True)
+
+plt.axvline(x=optimal_fill, color='r', linestyle='--', label=f'Optimal Fill: {optimal_fill:.2f}')
+plt.legend()
+
+plt.show()
+
+print(f"Optimal fill grade: {optimal_fill:.2f}")
+print(f"Maximum height: {max(heights):.2f} m")
+print(f"Maximum velocity: {max(velocities):.2f} m/s")
